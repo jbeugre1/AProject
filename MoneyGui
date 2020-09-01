@@ -1,0 +1,249 @@
+from tkinter import *
+import tkinter.ttk as ttk
+from datetime import date
+import sqlite3
+from tkinter import messagebox
+
+
+class Mainwindows:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Money Management")
+        self.root.geometry("640x500")
+
+        self.Frameright = Frame(self.root)
+        self.Frame1 = Frame(self.root)
+        self.Frame2 = Frame(self.Frameright)
+        self.Frame3 = Frame(self.Frameright)
+
+        self.Tree = ttk.Treeview(self.root)
+        self.Tree["column"] = ("Information", "Amount","Date")
+        self.Tree.column("#0", width=0, minwidth=0)
+        self.Tree.column("Information", width=300, minwidth=25)
+        self.Tree.column("Amount", width=100, minwidth=25)
+        self.Tree.column("Date", width=80, minwidth=25)
+
+        self.Tree.heading("#0", text="ID")
+        self.Tree.heading("Information", text="Information")
+        self.Tree.heading("Amount", text="Amount")
+        self.Tree.heading("Date",text="Date")
+
+        self.Tree.grid(row=0, column=0, sticky="nsew")
+
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=0)
+
+        self.LabelBalance = Label(self.Frame2, text="$0")
+        self.LabelBalance.configure(font=("Arial", 32))
+
+        self.LabelBalance.pack()
+        self.Frame2.grid(row=0, column=1, pady=5)
+
+
+        def AddandWithdrawTp():
+            top = Toplevel()
+            Addwithdraw(top)
+            self.root.update_display()
+
+        def SetBalanceTp():
+            top = Toplevel()
+            setbalance(top)
+
+
+        def refresh():
+            self.Tree.delete(*self.Tree.get_children())
+            self.conn = sqlite3.connect('Money.db')
+            c = self.conn.cursor()
+
+            c.execute("SELECT *,oid FROM money")
+            records = c.fetchall()
+            for record in records:
+                tmp1 = record[0]
+                tmp2 = record[1]
+                tmp3 = record[2]
+                tmpid = record[3]
+                tmprow = self.Tree.insert("", "end", text=tmpid, values=(tmp1, tmp2, tmp3))
+
+
+        self.B1 = Button(self.Frame3, text="Add/withdraw money",command=AWB)
+        self.B2 = Button(self.Frame3, text="Check Monthly expense")
+        self.B3 = Button(self.Frame3, text="Set balance",command=SB)
+        self.B4 = Button(self.Frame3, text="Refresh",command=refresh)
+
+        self.B1.grid(row=0, column=0, pady=1)
+        self.B2.grid(row=1, column=0, pady=1)
+        self.B3.grid(row=2, column=0, pady=1)
+        self.B4.grid(row=3, column=0, pady=1)
+        self.Frame3.grid(row=1, column=1, pady=14)
+
+        self.Frameright.grid(row=0, column=1, sticky="n")
+
+        self.conn = sqlite3.connect('Money.db')
+        self.c = self.conn.cursor()
+        '''
+        self.c.execute("""CREATE TABLE money(
+                Information text,
+                Money integer,
+                Date text)
+        """)
+        '''
+        self.conn = sqlite3.connect('Money.db')
+        c = self.conn.cursor()
+
+        c.execute("SELECT *,oid FROM money")
+        records = c.fetchall()
+
+        def tablevalue(self):
+            for record in records:
+                tmp1 = record[0]
+                tmp2 = record[1]
+                tmp3 = record[2]
+                tmpid = record[3]
+                tmprow = self.Tree.insert("", "end", text=tmpid, values=(tmp1, tmp2, tmp3))
+
+        tablevalue(self)
+
+
+
+
+
+class Addwithdraw:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Add/Withdraw Money")
+        self.root.geometry("400x150")
+
+        self.lab = Label(self.root, text="Info about Add/Withdraw: ")
+        self.entry = Entry(self.root,width=30)
+        self.lab.grid(row=0, column=0, pady=10)
+        self.entry.grid(row=0, column=1)
+        self.lab1 = Label(self.root, text="Amount: ")
+        self.entry1 = Entry(self.root,width=30)
+        self.lab1.grid(row=1, column=0, sticky="e")
+        self.entry1.grid(row=1, column=1)
+
+        self.r = IntVar()
+
+        self.radio1 = Radiobutton(self.root, text="Add", variable=self.r, value=1)
+        self.radio1.grid(row=2, column=0)
+        self.radio2 = Radiobutton(self.root, text="Withdraw", variable=self.r, value=2)
+        self.radio2.grid(row=2, column=1)
+
+        self.Fra = Frame(self.root)
+
+        def submit():
+            self.conn = sqlite3.connect('Money.db')
+            self.c = self.conn.cursor()
+            today = date.today()
+            d = today.strftime("%d/%m/%Y")
+            print(d)
+            amount=0
+            if self.r.get() == 1:
+                newamount = self.entry1.get()
+
+            elif self.r.get() == 2:
+                amount = self.entry1.get()
+                newamount = int(amount) * -1
+
+            self.c.execute("INSERT INTO money VALUES (:tf1, :tf2, :tf3)",
+                           {
+                               'tf1': self.entry.get(),
+                               'tf2': newamount,
+                               'tf3': d
+
+                           }
+                           )
+            self.conn.commit()
+            self.conn.close()
+
+
+
+            self.entry.delete(0, END)
+            self.entry1.delete(0, END)
+
+        self.but1 = Button(self.Fra, text="Validate",command=submit)
+        self.but1.grid(row=3, column=0, padx=10, pady=10)
+
+
+        def clear():
+            self.entry.delete(0, END)
+            self.entry1.delete(0, END)
+
+        self.but2 = Button(self.Fra, text="Delete",command=clear)
+        self.but2.grid(row=3, column=1, padx=5)
+
+        self.Fra.grid(row=3, column=0, columnspan=2, sticky="we", padx=80)
+
+
+
+
+class setbalance:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Set Balance")
+        self.root.geometry("250x80")
+
+        self.Label = Label(self.root,text="Set Balance: ")
+        self.entry = Entry(self.root)
+        self.Label.grid(row=0,column=0,pady=9)
+        self.entry.grid(row=0,column=1)
+
+        def submitvalidate():
+            f = open("Balance.txt","w")
+
+            try:
+                balance = int(self.entry.get())
+            except ValueError:
+                self.labelerror = Label(self.root, text="It should be an integer")
+                self.labelerror.grid(row=1, column=0,padx=10,columnspan=2)
+                self.labelerror.config(fg='red')
+                self.root.geometry("250x100")
+
+            try:
+                if type(balance) is int:
+                    f = open("Balance.txt", "w")
+                    f.write(str(balance))
+                    self.entry.delete(0, END)
+                    try:
+                        self.labelerror.destroy()
+                        self.root.geometry("250x80")
+                    except AttributeError:
+                        print("Nothing to delete")
+
+
+
+            except UnboundLocalError:
+                print("Minor Error")
+
+
+
+
+
+
+        def deletefield():
+            self.entry.delete(0, END)
+            try:
+                self.labelerror.destroy()
+                self.root.geometry("250x80")
+            except AttributeError:
+                print("No label to destroy")
+
+
+
+        self.fram = Frame(self.root)
+        self.button = Button(self.fram,text="Validate",command = submitvalidate)
+        self.button.grid(row=1,column=0,pady=10,padx=10)
+        self.button1 = Button(self.fram,text="Delete",command = deletefield)
+        self.button1.grid(row=1, column=1)
+        self.fram.grid(row=2,column=0,columnspan=2)
+
+
+
+
+
+
+
+root = Tk()
+ins = Mainwindows(root)
+root.mainloop()
+
